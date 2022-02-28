@@ -1,0 +1,10 @@
+[package]
+name = "hash_set_map"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/developing-today/HashSetMap"
+readme = "README.md"
+description = """
+HashSetMap, K=hash(V),V=V | So uh.. yeah. HashSetMap. ⛓️
+"""
