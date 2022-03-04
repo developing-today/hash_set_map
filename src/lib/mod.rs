@@ -1,4 +1,5 @@
 #[allow(dead_code)]
+pub mod sha1_hash_map;
 use core::panic;
 use hex::encode;
 use sha1::{Digest, Sha1};

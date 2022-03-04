@@ -1,5 +1,5 @@
-mod lib;
-use hash_set_map::HsmWithSha1Hasher;
+pub mod lib;
+use lib::sha1_hash_map::HsmWithSha1Hasher;
 
 fn main() {
     println!(
