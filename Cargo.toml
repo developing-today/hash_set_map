@@ -1,6 +1,6 @@
 [package]
 name = "hash_set_map"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/developing-today/HashSetMap"
@@ -9,6 +9,9 @@ description = """
 HashSetMap, K=hash(V),V=V | So uh.. yeah. HashSetMap. ⛓️
 
 """
+[lib]
+name = "lib"
+path = "src/lib/mod.rs"
 
 [dependencies]
 hex = "0.4.3"

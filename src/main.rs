@@ -1,6 +1,5 @@
 pub mod lib;
-use lib::sha1_hash_map::HsmWithSha1Hasher;
-
+use crate::lib::sha1_hash_map::HsmWithSha1Hasher;
 fn main() {
     println!(
         "{:#?}",
