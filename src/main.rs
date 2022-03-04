@@ -1,42 +1,20 @@
 mod lib;
-use hash_set_map::HashSetMapBuilder;
-use std::collections::hash_map::DefaultHasher;
+use hash_set_map::HsmWithSha1Hasher;
+
 fn main() {
-    let mut hsm = HashSetMapBuilder::new();
-    let mut hasher = DefaultHasher::new();
-    let hash = hsm.insert(&mut hasher, "asd".to_string());
-    println!("{hash:#?}");
-
-    let mut hsm = HashSetMapBuilder::new();
-    let mut hasher = &mut DefaultHasher::new();
-
-    let hash = hsm.insert(hasher, "asd".to_string());
-    println!("{hash:#?}");
     println!(
         "{:#?}",
-        hsm.insert(&mut DefaultHasher::new(), "asdddd".to_string())
+        HsmWithSha1Hasher::new()
+            .insert_blind("asd".to_string())
+            .insert_blind("asd".to_string())
+            .insert_blind("dsp".to_string())
+            .insert_blind("42".to_string())
+            .insert_blind("asd".to_string())
+            .insert_blind("asd".to_string())
+            .insert_blind("123".to_string())
+            .insert_blind("123".to_string())
+            .insert_blind("dsp".to_string())
+            .insert_blind("dezren3901234".to_string())
+            .build()
     );
-    println!(
-        "{:#?}",
-        hsm.insert(&mut DefaultHasher::new(), "asdddd".to_string())
-    );
-    println!(
-        "{:#?}",
-        hsm.insert(&mut DefaultHasher::new(), "asdddd".to_string())
-    );
-    println!(
-        "{:#?}",
-        hsm.insert(&mut DefaultHasher::new(), "asdddd".to_string())
-    );
-    println!("{:#?}", hsm.build());
 }
-
-/*
-ideas
-    - unify str vs String
-    - unify &mut self vs Self
-    - nested structs pass in super and return self of super?
-    - add a macro to create a builder
-    - figure out what derive and annotation do
-    - put all the strings in an owned vec, in the name field store the index
-    */

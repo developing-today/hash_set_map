@@ -1,33 +1,51 @@
+#[allow(dead_code)]
 use core::panic;
+use hex::encode;
+use sha1::{Digest, Sha1};
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
-    hash::{Hash, Hasher},
+    hash::{self, Hash, Hasher},
     rc::Rc,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct HashSetMap<T> {
-    register: HashMap<Rc<u64>, Rc<T>>,
+    pub register: HashMap<Rc<u64>, Rc<T>>,
 }
 
 pub struct HashSetMapBuilder<T> {
-    hash_register: HashSetMap<T>,
-    hasher: Option<Rc<dyn Hasher>>,
+    pub hash_register: HashSetMap<T>,
+    pub hasher: Option<Rc<dyn Hasher>>,
 }
+
+pub struct Sha1Hasher {
+    pub state: [u8; 20],
+}
+pub struct HsmWithSha1Hasher {
+    pub hsm: HashSetMapBuilder<String>,
+    pub hasher: Sha1Hasher,
+}
+
+#[allow(dead_code)]
 impl<'a, T> HashSetMapBuilder<T>
 where
     T: Hash + Eq + Clone + Default + ToString,
     HashSetMapBuilder<T>: Default,
 {
-    pub fn insert(&mut self, hasher: &'a mut dyn Hasher, input: T) -> Option<Rc<T>> {
+    pub fn insert(mut self, hasher: &'a mut dyn Hasher, input: T) -> (u64, Option<Rc<T>>, Self) {
         if self.hasher.is_none() {
             panic!("HashSetMapBuilder::insert() -> hasher is None")
         };
         hasher.write(input.to_string().as_bytes());
         let key = hasher.finish();
-        self.hash_register
-            .register
-            .insert(Rc::new(key), Rc::new(input))
+        // print!("{}|", key);
+        (
+            key,
+            self.hash_register
+                .register
+                .insert(Rc::new(key), Rc::new(input)),
+            self,
+        )
     }
     pub fn new() -> Self {
         Default::default()
@@ -46,7 +64,6 @@ where
             hasher: Some(hasher),
         }
     }
-
     pub fn new_with_capacity_and_hasher(capacity: usize, hasher: Rc<dyn Hasher>) -> Self {
         let mut hash_register = HashSetMap::default();
         hash_register.register = HashMap::with_capacity_and_hasher(capacity, Default::default());
@@ -78,6 +95,7 @@ where
         self.hash_register.register.clear();
     }
 }
+
 impl<T> Default for HashSetMapBuilder<T>
 where
     T: Hash + Eq + Clone + Default + ToString,
@@ -89,5 +107,74 @@ where
             },
             hasher: Some(Rc::new(DefaultHasher::new())),
         }
+    }
+}
+
+#[allow(dead_code)]
+impl Sha1Hasher
+where
+    Sha1Hasher: hash::Hasher,
+{
+    pub fn new() -> Self {
+        Self { state: [0; 20] }
+    }
+    fn digest(&self, data: &[u8]) -> String {
+        let mut hasher = Sha1Hasher::new();
+        hasher.write(data);
+        encode(hasher.state.as_ref())
+        // hasher.finish()
+    }
+    pub fn write(&mut self, bytes: &[u8]) {
+        // println!("{:?}", bytes);
+        let mut hasher = Sha1::new();
+        hasher.update(bytes);
+        let encode = encode(hasher.finalize()).as_bytes().to_vec();
+        // println!("{:#?}", encode);
+        self.state = encode[0..20].try_into().unwrap();
+    }
+
+    pub fn finish(&self) -> u64 {
+        let mut output: u64 = 0;
+        for &byte in self.state[0..7].iter() {
+            // print!("{}", byte);
+            output = output << 8;
+            output += byte as u64;
+        }
+        output
+    }
+}
+
+#[allow(dead_code)]
+impl hash::Hasher for Sha1Hasher {
+    fn finish(&self) -> u64 {
+        self.finish()
+    }
+    fn write(&mut self, bytes: &[u8]) {
+        self.write(bytes);
+    }
+}
+
+#[allow(dead_code)]
+impl HsmWithSha1Hasher {
+    pub fn new() -> Self {
+        Self {
+            hsm: HashSetMapBuilder::new(),
+            hasher: Sha1Hasher::new(),
+        }
+    }
+    pub fn insert(mut self, input: String) -> (u64, Option<Rc<String>>, Self) {
+        let key;
+        let previous;
+        (key, previous, self.hsm) = self.hsm.insert(&mut self.hasher, input);
+        (key, previous, self)
+    }
+    pub fn insert_blind(mut self, input: String) -> Self {
+        let _key;
+        let _previous;
+        (_key, _previous, self) = self.insert(input);
+        self
+    }
+    pub fn build(self) -> HashMap<Rc<u64>, Rc<String>> {
+        self.hsm.build()
     }
 }
