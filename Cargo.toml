@@ -1,6 +1,6 @@
 [package]
 name = "hash_set_map"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/developing-today/HashSetMap"
@@ -10,15 +10,20 @@ HashSetMap, K=hash(V),V=V | So uh.. yeah. HashSetMap. ⛓️
 
 If hasher allowed more than u64 output, this would be easier.
 
+At least one method with mroe than -> u64.
+
 Instead, the generic is limited to only that.
 
 Being able to fit 160-512 bits would be make this nice.
 
-As is, the generic version uses only u64 bits,
+As is, the generic version uses only left u64 bits,
 
 and the specific version I need uses SHA-1, 160 bits.
 
 (SHA-1 is only used because of git using it.)
+
+git now supports sha256, but github does not.
+
 
 """
 
