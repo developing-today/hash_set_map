@@ -10,7 +10,7 @@ use std::{
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct HashSetMap<T> {
-    pub register: HashMap<Rc<String>, Rc<T>>,
+    pub register: HashMap<Rc<[u8]>, Rc<T>>,
 }
 
 pub struct HashSetMapBuilder<T> {
@@ -32,16 +32,12 @@ where
     T: Hash + Eq + Clone + Default + ToString,
     HashSetMapBuilder<T>: Default,
 {
-    pub fn insert(
-        mut self,
-        hasher: &mut Sha1Hasher,
-        input: T,
-    ) -> (Rc<String>, Option<Rc<T>>, Self) {
+    pub fn insert(mut self, hasher: &mut Sha1Hasher, input: T) -> (Rc<[u8]>, Option<Rc<T>>, Self) {
         if self.hasher.is_none() {
             panic!("HashSetMapBuilder::insert() -> hasher is None")
         };
         hasher.write(input.to_string().as_bytes());
-        let key = Rc::new(hasher.finish());
+        let key = hasher.finish();
         // print!("{}|", key);
         (
             key.clone(),
@@ -75,7 +71,11 @@ where
         }
     }
     pub fn build(self) -> HashMap<Rc<String>, Rc<T>> {
-        self.hash_register.register
+        let mut hash_register = HashMap::with_capacity(self.hash_register.register.len());
+        for (key, value) in self.hash_register.register.into_iter() {
+            hash_register.insert(Rc::new(encode(key.as_ref())), value);
+        }
+        hash_register
     }
 
     pub fn with_hasher(mut self, hasher: Rc<dyn Hasher>) -> Self {
@@ -117,7 +117,7 @@ impl Sha1Hasher {
     pub fn new() -> Self {
         Self { state: [0; 20] }
     }
-    fn digest(&self, data: &[u8]) -> String {
+    pub fn digest(&self, data: &[u8]) -> String {
         let mut hasher = Sha1Hasher::new();
         hasher.write(data);
         encode(hasher.state.as_ref())
@@ -131,8 +131,8 @@ impl Sha1Hasher {
         self.state = encode[0..20].try_into().unwrap();
     }
 
-    pub fn finish(&self) -> String {
-        encode(self.state.as_ref())
+    pub fn finish(&self) -> Rc<[u8]> {
+        Rc::new(self.state)
     }
 }
 
@@ -144,7 +144,7 @@ impl HsmWithSha1Hasher {
             hasher: Sha1Hasher::new(),
         }
     }
-    pub fn insert(mut self, input: String) -> (Rc<String>, Option<Rc<String>>, Self) {
+    pub fn insert(mut self, input: String) -> (Rc<[u8]>, Option<Rc<String>>, Self) {
         let key;
         let previous;
         (key, previous, self.hsm) = self.hsm.insert(&mut self.hasher, input);
