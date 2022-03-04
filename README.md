@@ -11,6 +11,27 @@ So uh.. yeah. HashSetMap. ⛓️
 
 A hashmap where the hash is precomputed and used as the key.
 
+I don't actually override the hash _in_ the hashmap in this implementation.
+
+
+If hasher allowed more than u64 output, this would be easier.
+
+At least one method with mroe than -> u64.
+
+Instead, the generic is limited to only that.
+
+Being able to fit 160-512 bits would be make this nice.
+
+As is, the generic version uses only left u64 bits,
+
+and the specific version I need uses SHA-1, 160 bits.
+
+(SHA-1 is only used because of git using it.)
+
+git now supports sha256, but github does not.
+
+
+
 *** Author is new to rust, this is a side project,
 any advice on improving the ergonomics or practices
 would be appreciated ***
