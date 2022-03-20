@@ -5,17 +5,17 @@ use sha1::{Digest, Sha1};
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     hash::{Hash, Hasher},
-    rc::Rc,
+    sync::Arc,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct HashSetMap<T> {
-    pub register: HashMap<Rc<[u8]>, Rc<T>>,
+    pub register: HashMap<Arc<[u8]>, Arc<T>>,
 }
 
 pub struct HashSetMapBuilder<T> {
     pub hash_register: HashSetMap<T>,
-    pub hasher: Option<Rc<dyn Hasher>>,
+    pub hasher: Option<Arc<dyn Hasher>>,
 }
 
 pub struct Sha1Hasher {
@@ -32,7 +32,11 @@ where
     T: Hash + Eq + Clone + Default + ToString,
     HashSetMapBuilder<T>: Default,
 {
-    pub fn insert(mut self, hasher: &mut Sha1Hasher, input: T) -> (Rc<[u8]>, Option<Rc<T>>, Self) {
+    pub fn insert(
+        mut self,
+        hasher: &mut Sha1Hasher,
+        input: T,
+    ) -> (Arc<[u8]>, Option<Arc<T>>, Self) {
         if self.hasher.is_none() {
             panic!("HashSetMapBuilder::insert() -> hasher is None")
         };
@@ -41,7 +45,7 @@ where
         // print!("{}|", key);
         (
             key.clone(),
-            self.hash_register.register.insert(key, Rc::new(input)),
+            self.hash_register.register.insert(key, Arc::new(input)),
             self,
         )
     }
@@ -56,13 +60,13 @@ where
             hasher: None,
         }
     }
-    pub fn new_with_hasher(hasher: Rc<dyn Hasher>) -> Self {
+    pub fn new_with_hasher(hasher: Arc<dyn Hasher>) -> Self {
         Self {
             hash_register: Default::default(),
             hasher: Some(hasher),
         }
     }
-    pub fn new_with_capacity_and_hasher(capacity: usize, hasher: Rc<dyn Hasher>) -> Self {
+    pub fn new_with_capacity_and_hasher(capacity: usize, hasher: Arc<dyn Hasher>) -> Self {
         let mut hash_register = HashSetMap::default();
         hash_register.register = HashMap::with_capacity_and_hasher(capacity, Default::default());
         Self {
@@ -70,19 +74,19 @@ where
             hasher: Some(hasher),
         }
     }
-    pub fn build(self) -> HashMap<Rc<String>, Rc<T>> {
+    pub fn build(self) -> HashMap<Arc<String>, Arc<T>> {
         let mut hash_register = HashMap::with_capacity(self.hash_register.register.len());
         for (key, value) in self.hash_register.register.into_iter() {
-            hash_register.insert(Rc::new(encode(key.as_ref())), value);
+            hash_register.insert(Arc::new(encode(key.as_ref())), value);
         }
         hash_register
     }
 
-    pub fn with_hasher(mut self, hasher: Rc<dyn Hasher>) -> Self {
+    pub fn with_hasher(mut self, hasher: Arc<dyn Hasher>) -> Self {
         self.hasher = Some(hasher);
         self
     }
-    pub fn hasher(&mut self, hasher: Rc<dyn Hasher>) -> &mut Self {
+    pub fn hasher(&mut self, hasher: Arc<dyn Hasher>) -> &mut Self {
         self.hasher = Some(hasher);
         self
     }
@@ -107,7 +111,7 @@ where
             hash_register: HashSetMap {
                 register: HashMap::new(),
             },
-            hasher: Some(Rc::new(DefaultHasher::new())),
+            hasher: Some(Arc::new(DefaultHasher::new())),
         }
     }
 }
@@ -131,8 +135,8 @@ impl Sha1Hasher {
         self.state = encode[0..20].try_into().unwrap();
     }
 
-    pub fn finish(&self) -> Rc<[u8]> {
-        Rc::new(self.state)
+    pub fn finish(&self) -> Arc<[u8]> {
+        Arc::new(self.state)
     }
 }
 
@@ -144,7 +148,7 @@ impl HsmWithSha1Hasher {
             hasher: Sha1Hasher::new(),
         }
     }
-    pub fn insert(mut self, input: String) -> (Rc<[u8]>, Option<Rc<String>>, Self) {
+    pub fn insert(mut self, input: String) -> (Arc<[u8]>, Option<Arc<String>>, Self) {
         let key;
         let previous;
         (key, previous, self.hsm) = self.hsm.insert(&mut self.hasher, input);
@@ -156,7 +160,7 @@ impl HsmWithSha1Hasher {
         (_key, _previous, self) = self.insert(input);
         self
     }
-    pub fn build(self) -> HashMap<Rc<String>, Rc<String>> {
+    pub fn build(self) -> HashMap<Arc<String>, Arc<String>> {
         self.hsm.build()
     }
 }
